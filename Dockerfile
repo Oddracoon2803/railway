@@ -1,5 +1,5 @@
 # Base image Python
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 # Supaya log langsung keluar (penting di Railway)
 ENV PYTHONUNBUFFERED=1
