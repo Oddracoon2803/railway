@@ -31,4 +31,4 @@ COPY . .
 ENV PORT=8000
 
 # Run app dengan gunicorn
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "app:app"]
+CMD ["sh", "-c", "gunicorn -w 1 -b 0.0.0.0:$PORT app:app"]
