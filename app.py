@@ -4,27 +4,36 @@ from flask_cors import CORS
 import numpy as np
 from tensorflow import keras
 import joblib
-import threading
-from pyngrok import ngrok
 
 # =======================
 # CONFIG
 # =======================
 CONF_THRESHOLD = 0.3
-PORT = 5000
+
+# ambil port dari Railway
+PORT = int(os.environ.get("PORT", 8000))
+
+# base directory project
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # =======================
 # INIT APP
 # =======================
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 
 # =======================
 # LOAD MODEL
 # =======================
-model = keras.models.load_model("/content/bisindo_model.h5", compile=False)
-scaler = joblib.load("/content/scaler.pkl")
-label_encoder = joblib.load("/content/label_encoder.pkl")
+print("🔄 Loading model...")
+
+model = keras.models.load_model(
+    os.path.join(BASE_DIR, "bisindo_model.h5"),
+    compile=False
+)
+
+scaler = joblib.load(os.path.join(BASE_DIR, "scaler.pkl"))
+label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder.pkl"))
 
 labels = label_encoder.classes_
 
@@ -67,6 +76,7 @@ def predict():
         X = preprocess_landmarks(data)
 
         pred = model.predict(X, verbose=0)[0]
+
         idx = int(np.argmax(pred))
         conf = float(np.max(pred))
         label = str(labels[idx])
@@ -74,15 +84,21 @@ def predict():
         if conf < CONF_THRESHOLD:
             return jsonify({"label": "-", "conf": conf})
 
-        return jsonify({"label": label, "conf": conf})
+        return jsonify({
+            "label": label,
+            "conf": conf
+        })
 
     except Exception as e:
-        return jsonify({"error": str(e)})
+        print("❌ ERROR:", e)
+        return jsonify({
+            "label": "-",
+            "conf": 0.0,
+            "error": str(e)
+        })
 
 # =======================
-# RUN FLASK (THREAD)
+# LOCAL RUN (optional)
 # =======================
-def run_app():
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
-
-threading.Thread(target=run_app).start()
